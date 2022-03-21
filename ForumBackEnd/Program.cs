@@ -3,9 +3,14 @@ using ForumBackEnd.Data;
 using ForumBackEnd.Repositories;
 using ForumBackEnd.Services;
 using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using ForumBackEnd.Models;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+using System.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
-
 builder.Services.AddDbContext<ForumBackEndContext>(options =>
 
     options.UseSqlServer(builder.Configuration.GetConnectionString("ForumBackEndContext")).UseLazyLoadingProxies());
@@ -25,7 +30,21 @@ builder.Services.AddScoped<ModuleServices>();
 builder.Services.AddScoped<CourseServices>();
 builder.Services.AddScoped<RoleServices>();
 builder.Services.AddScoped<UserServices>();
-
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(
+    options => 
+    options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = "yourdomain.com",
+        ValidAudience = "yourdomain.com",
+        IssuerSigningKey = new SymmetricSecurityKey(
+            Encoding.UTF8.GetBytes(builder.Configuration.GetSection("Super_Secret_Ob_Key:Token").Value)
+            )
+    }
+    );
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -42,6 +61,8 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.UseAuthorization();
+
+app.UseAuthentication();
 
 app.MapControllers();
 

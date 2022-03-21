@@ -10,11 +10,14 @@ using ForumBackEnd.Data;
 using ForumBackEnd.Models;
 using ForumBackEnd.Services;
 using ForumBackEnd.DTO;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 
 namespace ForumBackEnd.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     public class AnswersController : ControllerBase
     {
         private AnswerServices answerServices;

@@ -12,6 +12,8 @@ using ForumBackEnd.Services;
 using ForumBackEnd.Controllers.DTO;
 using System.Net;
 using ForumBackEnd.DTO;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 
 namespace ForumBackEnd.Controllers
 {

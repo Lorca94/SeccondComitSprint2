@@ -1,4 +1,6 @@
-﻿namespace ForumBackEnd.Models
+﻿using Microsoft.AspNetCore.Identity;
+
+namespace ForumBackEnd.Models
 {
     public class User
     {

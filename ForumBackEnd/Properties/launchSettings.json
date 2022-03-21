@@ -1,4 +1,4 @@
-﻿{
+{
   "$schema": "https://json.schemastore.org/launchsettings.json",
   "iisSettings": {
     "windowsAuthentication": false,
@@ -11,13 +11,14 @@
   "profiles": {
     "ForumBackEnd": {
       "commandName": "Project",
-      "dotnetRunMessages": true,
       "launchBrowser": true,
       "launchUrl": "swagger",
-      "applicationUrl": "https://localhost:7278;http://localhost:5278",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
-      }
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        " Super_Secret_Ob_Key": "esto_es_una_key_muy_secreta"
+      },
+      "applicationUrl": "https://localhost:7278;http://localhost:5278",
+      "dotnetRunMessages": true
     },
     "IIS Express": {
       "commandName": "IISExpress",
