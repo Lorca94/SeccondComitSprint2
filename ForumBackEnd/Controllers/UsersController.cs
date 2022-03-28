@@ -8,67 +8,55 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ForumBackEnd.Data;
 using ForumBackEnd.Models;
-using ForumBackEnd.Services;
+using ForumBackEnd.Services.UserRepository;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using ForumBackEnd.Controllers.DTO;
-using System.Net;
-using ForumBackEnd.DTO;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+using ForumBackEnd.Services.PasswordRepository;
 using Microsoft.AspNetCore.Authorization;
 
 namespace ForumBackEnd.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("forum/users")]
     [ApiController]
     public class UsersController : ControllerBase
     {
-        private UserServices userServices;
-        private RoleServices roleServices;
+        private readonly IUserRepository _userRepository;
+        private readonly IPasswordRepository _enconder;
+        private readonly IConfiguration _configuration;
 
-        public UsersController(UserServices userServices, RoleServices roleServices)
+        public UsersController(IUserRepository userRepository, IPasswordRepository enconder,
+            IConfiguration configuration)
         {
-            this.userServices = userServices;
-            this.roleServices = roleServices;
+            _userRepository = userRepository;
+            _enconder = enconder;
+            _configuration = configuration;
         }
+
 
         // GET: api/Users
         [HttpGet]
-        public IEnumerable<User> GetUsers()
+        public ActionResult<IEnumerable<User>> GetUser()
         {
-            return userServices.FindAllUser();
+            return Ok(_userRepository.FindAllUsers());
         }
-        
+
         // GET: api/Users/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<User>> GetUser(int id)
+        public ActionResult<User> GetUser(int id)
         {
-            return userServices.FindUserById(id);
-        }
+            var user = _userRepository.FindById(id);
 
-        [HttpPost]
-        public IActionResult PostUser(UserDTO userDTO)
-        {   
-            if (ModelState.IsValid)
+            if (user == null)
             {
-                User user = new User() { Email = userDTO.Email, Username = userDTO.UserName, Password = userDTO.Password, RoleId = userDTO.RoleId };
-                // Si el usuario es 
-                if (userServices.ValidateUser(user))
-                {
-                    int proccess = userServices.CreateUser(user);
-                    switch (proccess)
-                    {
-                        case -1:
-                            return BadRequest( new MessageDTO { Message = "Necesitas un rol válido para crear un usuario"});
-                        case 0:
-                            return BadRequest(new MessageDTO { Message = "Email/Username en uso" });
-                        case 1:
-                            return Ok(new MessageDTO { Message = "Usuario creado con éxito" });
-                    }
-                }
+                return NotFound();
             }
-            return BadRequest(ModelState);
+
+            return user;
         }
 
-        
         // PUT: api/Users/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
@@ -76,25 +64,68 @@ namespace ForumBackEnd.Controllers
         {
             if (id != user.Id)
             {
-                return BadRequest(new MessageDTO { Message = "Id no corresponde con el usuario"});
+                return BadRequest();
             }
-            if (!userServices.ModifyUser(user))
+            if (!UserExists(user.Id))
             {
-                return BadRequest(new MessageDTO { Message = "No se ha encontrado el usuario a modificar" });
+                return NotFound();
             }
-            return Ok(user);
+
+            _userRepository.Update(user);
+            return NoContent();
         }
 
         // DELETE: api/Users/5
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteUser(int id)
+        public IActionResult DeleteUser(int id)
         {
-            User user = userServices.FindUserById(id);
-            if(user != null)
+            if (_userRepository.DeleteById(id))
             {
                 return NoContent();
+            } else
+            {
+                return NotFound();
             }
-            return NotFound(new MessageDTO { Message = "Usuario no encontrado"});
+        }
+
+        /// <summary>
+        /// Permite crear usuarios con Role "Usuario"
+        /// </summary>
+        /// <param name="register"></param>
+        /// <returns></returns>
+        [AllowAnonymous]
+        [HttpPost("register")]
+        public IActionResult Register([FromBody] UserDTO register)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest();
+            }
+            User existingUserByEmail = _userRepository.FindByEmail(register.Email);
+            if (existingUserByEmail != null)
+            {
+                return Conflict();
+            }
+            if (register.Password != register.ConfirmPassword)
+            {
+                return BadRequest();
+            }
+            string passwordHash = _enconder.HashPassword(register.Password);
+            User user = new User()
+            {
+                Email = register.Email,
+                Username = register.UserName,
+                Password = passwordHash,
+                RoleName = register.RoleName
+            };
+            _userRepository.Create(user);
+            return Ok(user);
+        }
+       
+
+        private bool UserExists(int id)
+        {
+            return _userRepository.UserExists(id);
         }
     }
 }

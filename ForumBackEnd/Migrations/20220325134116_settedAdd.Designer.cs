@@ -4,6 +4,7 @@ using ForumBackEnd.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,10 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ForumBackEnd.Migrations
 {
     [DbContext(typeof(ForumBackEndContext))]
-    partial class ForumBackEndContextModelSnapshot : ModelSnapshot
+    [Migration("20220325134116_settedAdd")]
+    partial class settedAdd
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -162,6 +164,9 @@ namespace ForumBackEnd.Migrations
                     b.Property<string>("Description")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsSetted")
+                        .HasColumnType("bit");
 
                     b.Property<string>("Name")
                         .IsRequired()

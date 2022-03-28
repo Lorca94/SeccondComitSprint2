@@ -8,37 +8,33 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ForumBackEnd.Data;
 using ForumBackEnd.Models;
-using ForumBackEnd.Services;
 using ForumBackEnd.DTO;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 
 namespace ForumBackEnd.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     public class AnswersController : ControllerBase
     {
-        private AnswerServices answerServices;
+        private readonly ForumBackEndContext _context;
 
-        public AnswersController(AnswerServices answerServices)
+        public AnswersController(ForumBackEndContext context)
         {
-            this.answerServices = answerServices;
+            _context = context;
         }
 
         // GET: api/Answers
         [HttpGet]
-        public IEnumerable<Answer> GetAnswers()
+        public async Task<ActionResult<IEnumerable<Answer>>> GetAnswers()
         {
-            return answerServices.FindAllAnswers();
+            return await _context.Answers.ToListAsync();
         }
 
         // GET: api/Answers/5
         [HttpGet("{id}")]
-        public ActionResult<Answer> GetAnswer(int id)
+        public async Task<ActionResult<Answer>> GetAnswer(int id)
         {
-            var answer = answerServices.FindAnswerById(id);
+            var answer = await _context.Answers.FindAsync(id);
 
             if (answer == null)
             {
@@ -51,38 +47,49 @@ namespace ForumBackEnd.Controllers
         // PUT: api/Answers/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
-        public IActionResult PutAnswer(int id, Answer answer)
+        public async Task<IActionResult> PutAnswer(int id, Answer answer)
         {
             if (id != answer.Id)
             {
-                return BadRequest(new MessageDTO { Message = "Las id's no coinciden"});
+                return BadRequest();
             }
 
-            if (!answerServices.ExistByid(answer.Id))
+            _context.Entry(answer).State = EntityState.Modified;
+
+            try
             {
-                return BadRequest(new MessageDTO { Message = "No existe el mensaje que desea modificar" });
+                await _context.SaveChangesAsync();
             }
+            catch (DbUpdateConcurrencyException)
+            {
+                if (!AnswerExists(id))
+                {
+                    return NotFound();
+                }
+                else
+                {
+                    throw;
+                }
+            }
+
             return NoContent();
         }
 
         // POST: api/Answers
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public ActionResult<Answer> PostAnswer(AnswerDTO answerDTO)
+        public async Task<ActionResult<Answer>> PostAnswer(AnswerDTO answerDTO)
         {
             Answer answer = new Answer()
             {
-                Title = answerDTO.Title,
-                Description = answerDTO.Description,
-                Code = answerDTO.Code,
+                Reponse = answerDTO.Response,
+                Code = answerDTO.Description,
+                QuestionId = answerDTO.QuestionId,
                 UserId = answerDTO.UserId,
-                QuestionId = answerDTO.QuestionId
             };
 
-            if (!answerServices.CreateAnswer(answer))
-            {
-                return BadRequest(new MessageDTO { Message = "Error la question o usuario introducidos no existen"});
-            }
+            _context.Answers.Add(answer);
+            await _context.SaveChangesAsync();
 
             return CreatedAtAction("GetAnswer", new { id = answer.Id }, answer);
         }
@@ -91,18 +98,21 @@ namespace ForumBackEnd.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteAnswer(int id)
         {
-            Answer answer = answerServices.FindAnswerById(id);
+            var answer = await _context.Answers.FindAsync(id);
             if (answer == null)
             {
                 return NotFound();
             }
-            answerServices.DeteleAnswer(answer);
+
+            _context.Answers.Remove(answer);
+            await _context.SaveChangesAsync();
+
             return NoContent();
         }
 
         private bool AnswerExists(int id)
         {
-            return answerServices.ExistByid(id);
+            return _context.Answers.Any(e => e.Id == id);
         }
     }
 }

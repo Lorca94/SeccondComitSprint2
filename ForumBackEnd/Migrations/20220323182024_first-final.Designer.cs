@@ -4,6 +4,7 @@ using ForumBackEnd.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,10 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ForumBackEnd.Migrations
 {
     [DbContext(typeof(ForumBackEndContext))]
-    partial class ForumBackEndContextModelSnapshot : ModelSnapshot
+    [Migration("20220323182024_first-final")]
+    partial class firstfinal
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -287,15 +289,16 @@ namespace ForumBackEnd.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("RoleName")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<int>("RoleId")
+                        .HasColumnType("int");
 
                     b.Property<string>("Username")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("RoleId");
 
                     b.ToTable("Users");
                 });
@@ -413,9 +416,9 @@ namespace ForumBackEnd.Migrations
             modelBuilder.Entity("ForumBackEnd.Models.Question", b =>
                 {
                     b.HasOne("ForumBackEnd.Models.Module", "Module")
-                        .WithMany("Questions")
+                        .WithMany()
                         .HasForeignKey("ModuleId")
-                        .OnDelete(DeleteBehavior.NoAction)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("ForumBackEnd.Models.User", "User")
@@ -448,6 +451,17 @@ namespace ForumBackEnd.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("ForumBackEnd.Models.User", b =>
+                {
+                    b.HasOne("ForumBackEnd.Models.Role", "Role")
+                        .WithMany("Users")
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Role");
+                });
+
             modelBuilder.Entity("ForumBackEnd.Models.Answer", b =>
                 {
                     b.Navigation("Likes");
@@ -463,8 +477,6 @@ namespace ForumBackEnd.Migrations
             modelBuilder.Entity("ForumBackEnd.Models.Module", b =>
                 {
                     b.Navigation("ModuleRelations");
-
-                    b.Navigation("Questions");
                 });
 
             modelBuilder.Entity("ForumBackEnd.Models.Question", b =>
@@ -474,6 +486,11 @@ namespace ForumBackEnd.Migrations
                     b.Navigation("Likes");
 
                     b.Navigation("Subs");
+                });
+
+            modelBuilder.Entity("ForumBackEnd.Models.Role", b =>
+                {
+                    b.Navigation("Users");
                 });
 
             modelBuilder.Entity("ForumBackEnd.Models.User", b =>

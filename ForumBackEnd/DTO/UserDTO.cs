@@ -12,8 +12,9 @@ namespace ForumBackEnd.Controllers.DTO
         
         [Required]
         public string Password { get; set; }
-        
         [Required]
-        public int RoleId { get; set; }
+        public string ConfirmPassword { get; set; }
+        [Required]
+        public string RoleName{ get; set; }
     }
 }

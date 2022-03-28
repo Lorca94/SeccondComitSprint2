@@ -1,7 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using ForumBackEnd.Data;
-using ForumBackEnd.Repositories;
-using ForumBackEnd.Services;
+
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -9,27 +8,34 @@ using ForumBackEnd.Models;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using System.Configuration;
+using ForumBackEnd.Services.UserRepository;
+using ForumBackEnd.Services.PasswordRepository;
+using ForumBackEnd.Services;
+using ForumBackEnd.Services.CourseRepository;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddCors();
+// Se llama a la BBDD y se utiliza lazyloding
 builder.Services.AddDbContext<ForumBackEndContext>(options =>
 
     options.UseSqlServer(builder.Configuration.GetConnectionString("ForumBackEndContext")).UseLazyLoadingProxies());
+// Se añade configuracion cors
+
 // Add services to the container.
 builder.Services.AddControllers();
+// Se indica al controlador que ignore los referencias cíclicas
 builder.Services.AddControllers().AddJsonOptions(x =>
                 x.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);
+
+// Se añaden scoped de repos
 builder.Services.AddScoped<IUserRepository, UserRepository>();
-builder.Services.AddScoped<IRoleRepository, RoleRepository>();
+builder.Services.AddScoped<IPasswordRepository, PasswordRepository>();
 builder.Services.AddScoped<ICourseRepository, CourseRepository>();
-builder.Services.AddScoped<IModuleRepository, ModuleRepository>();
-builder.Services.AddScoped<IQuestionRepository, QuestionsRepository>();
-builder.Services.AddScoped<IAnswerRepository, AnswerRepository>();
-builder.Services.AddScoped<AnswerServices>();
-builder.Services.AddScoped<QuestionServices>();
-builder.Services.AddScoped<ModuleServices>();
-builder.Services.AddScoped<CourseServices>();
-builder.Services.AddScoped<RoleServices>();
-builder.Services.AddScoped<UserServices>();
+// Scoped para crear los jwt
+builder.Services.AddScoped <JwtServices>();
+
+// Se utiliza authenticacion (JWT)
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(
     options => 
     options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
@@ -45,6 +51,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
             )
     }
     );
+
+builder.Services.AddMvc();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -59,11 +67,14 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
-app.UseAuthorization();
+app.UseCors( c => c.AllowAnyHeader().AllowAnyMethod().AllowAnyOrigin());
+app.UseRouting();
 
 app.UseAuthentication();
+app.UseAuthorization();
 
+
+app.UseStatusCodePages();
 app.MapControllers();
 
 app.Run();

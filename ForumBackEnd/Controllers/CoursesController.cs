@@ -10,41 +10,37 @@ using ForumBackEnd.Data;
 using ForumBackEnd.Models;
 using ForumBackEnd.Services;
 using ForumBackEnd.DTO;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+using ForumBackEnd.Services.CourseRepository;
 
 namespace ForumBackEnd.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     public class CoursesController : ControllerBase
     {
-        private CourseServices service;
-        private UserServices userServices;
+        private readonly ICourseRepository courseRepository;
 
-        public CoursesController(CourseServices service, UserServices userServices)
+        public CoursesController(ICourseRepository courseRepository)
         {
-            this.service = service;
-            this.userServices = userServices;
+            this.courseRepository = courseRepository;
         }
 
         // GET: api/Courses
         [HttpGet]
-        public IEnumerable<Course> GetCourses()
+        public ActionResult<IEnumerable<Course>> GetCourses()
         {
-            return service.FindAllCourses();
+            return Ok(courseRepository.FindAllCourses());
         }
 
         // GET: api/Courses/5
         [HttpGet("{id}")]
         public ActionResult<Course> GetCourse(int id)
         {
-            Course course = service.FindCourseById(id);
+            var course = courseRepository.FindCourseById(id);
 
             if (course == null)
             {
-                return NotFound(new MessageDTO {Message = "No se ha encontrado el curso"});
+                return NotFound();
             }
 
             return course;
@@ -53,22 +49,14 @@ namespace ForumBackEnd.Controllers
         // PUT: api/Courses/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
-        public IActionResult PutCourse(int id, CourseDTO course)
+        public async Task<IActionResult> PutCourse(int id, Course course)
         {
-            Course actualCourse = service.FindCourseById(id);
-            if (actualCourse == null)
+            if (id != course.Id)
             {
-                return BadRequest(new MessageDTO { Message = "No se ha podido modificar con éxito"});
+                return BadRequest();
             }
-            if(!actualCourse.Name.Equals(course.Name, StringComparison.InvariantCultureIgnoreCase))
-            {
-                actualCourse.Name = course.Name;
-            }
-            if(!actualCourse.Description.Equals(course.Description, StringComparison.InvariantCultureIgnoreCase))
-            {
-                actualCourse.Description = course.Description;
-            }
-            service.ModifyCourse(actualCourse);
+
+            courseRepository.UpdateCourse(course);
             return NoContent();
         }
 
@@ -77,35 +65,35 @@ namespace ForumBackEnd.Controllers
         [HttpPost]
         public ActionResult<Course> PostCourse(CourseDTO courseDTO)
         {
-            Course course = new Course() { Name = courseDTO.Name, Description = courseDTO.Description, UserId = courseDTO.UserId };
-            if (userServices.ExistsUser(course.UserId)) {
-                if (service.ExistsByName(course.Name))
+            if (ModelState.IsValid)
+            {
+                Course course = new Course()
                 {
-                    return BadRequest(new MessageDTO {  Message = "Este curso ya ha sido registrado con anterioridad" });
-                }
-                service.CreateCourse(course);
-                return Ok(new MessageDTO { Message = "Curso registrado  --> " + course.Name + "" });
+                    Name = courseDTO.Name,
+                    Description = courseDTO.Description
+                };
+                courseRepository.CreateCourse(course);
+                return Ok(course);
             }
-            return BadRequest(new MessageDTO { Message = "Necesitas un usuario válido para crear un curso" });
+            return BadRequest();
+
+            
         }
 
         // DELETE: api/Courses/5
         [HttpDelete("{id}")]
-        public IActionResult DeleteCourse(int id)
+        public async Task<IActionResult> DeleteCourse(int id)
         {
-            Course course = service.FindCourseById(id);
-            if (course == null)
+            if (!courseRepository.DeleteCourse(id))
             {
-                return NotFound(course);
+                return NotFound();
             }
-
-            service.DeteleCourse(id);
             return NoContent();
         }
 
         private bool CourseExists(int id)
         {
-            return service.ExistsById(id);
+            return courseRepository.CourseExists(id);
         }
     }
 }

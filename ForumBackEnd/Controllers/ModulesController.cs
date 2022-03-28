@@ -8,117 +8,102 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ForumBackEnd.Data;
 using ForumBackEnd.Models;
-using ForumBackEnd.Services;
-using ForumBackEnd.DTO;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Authorization;
 
 namespace ForumBackEnd.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     public class ModulesController : ControllerBase
     {
-        private UserServices userServices;
-        private CourseServices courseServices;
-        private ModuleServices moduleServices;
+        private readonly ForumBackEndContext _context;
 
-        public ModulesController(UserServices userServices, CourseServices courseServices, ModuleServices moduleServices) 
+        public ModulesController(ForumBackEndContext context)
         {
-            this.userServices = userServices;
-            this.courseServices = courseServices;
-            this.moduleServices = moduleServices;
+            _context = context;
         }
 
         // GET: api/Modules
         [HttpGet]
-        public IEnumerable<Module> GetModules()
+        public async Task<ActionResult<IEnumerable<Module>>> GetModules()
         {
-            return moduleServices.FindModules();
+            return await _context.Modules.ToListAsync();
         }
 
         // GET: api/Modules/5
         [HttpGet("{id}")]
-        public ActionResult<Module> GetModule(int id)
+        public async Task<ActionResult<Module>> GetModule(int id)
         {
-            Module module = moduleServices.FindModule(id);
+            var @module = await _context.Modules.FindAsync(id);
 
             if (@module == null)
             {
-                return NotFound(new MessageDTO { Message = "No se ha encontrado el módulo"});
+                return NotFound();
             }
 
-            return module;
+            return @module;
         }
 
         // PUT: api/Modules/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
-        public IActionResult PutModule(int id, Module @module)
+        public async Task<IActionResult> PutModule(int id, Module @module)
         {
-            Module actualModule = moduleServices.FindModule(id);
-            if (actualModule == null)
+            if (id != @module.Id)
             {
                 return BadRequest();
             }
-            if(!actualModule.Title.Equals(module.Title, StringComparison.InvariantCultureIgnoreCase))
+
+            _context.Entry(@module).State = EntityState.Modified;
+
+            try
             {
-                actualModule.Title = module.Title;
+                await _context.SaveChangesAsync();
             }
-            if(!actualModule.Description.Equals(module.Description, StringComparison.InvariantCultureIgnoreCase))
+            catch (DbUpdateConcurrencyException)
             {
-                actualModule.Description = module.Description;
+                if (!ModuleExists(id))
+                {
+                    return NotFound();
+                }
+                else
+                {
+                    throw;
+                }
             }
-            if (!actualModule.CourseId.Equals(module.CourseId))
-            {
-                actualModule.CourseId = module.CourseId;
-            }
-            moduleServices.ModifyModule(actualModule);
-            moduleServices.Save();
+
             return NoContent();
         }
 
         // POST: api/Modules
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public ActionResult<Module> PostModule(ModuleDTO moduleDTO)
+        public async Task<ActionResult<Module>> PostModule(Module @module)
         {
-            Module module = new Module() { 
-                Title = moduleDTO.Title, 
-                Description = moduleDTO.Description, 
-                CourseId = moduleDTO.CourseId, 
-                UserId = moduleDTO.UserId 
-            };
-            if (userServices.ExistsUser(module.UserId))
-            {
-                if (courseServices.ExistsById(module.CourseId))
-                {
-                    moduleServices.CreateModule(module);
-                    moduleServices.Save();
-                    return Ok(new MessageDTO { Message = "Modulo añadido con éxito" });
-                }
-                return BadRequest(new MessageDTO { Message = "Necesitas un curso válido para crear un módulo"});
-            }
-            return BadRequest(new MessageDTO { Message = "Necesitas un usuario válido para registrar el módulo"});
+            _context.Modules.Add(@module);
+            await _context.SaveChangesAsync();
 
-            
+            return CreatedAtAction("GetModule", new { id = @module.Id }, @module);
         }
 
         // DELETE: api/Modules/5
         [HttpDelete("{id}")]
-        public IActionResult DeleteModule(int id)
+        public async Task<IActionResult> DeleteModule(int id)
         {
-            Module module = moduleServices.FindModule(id);
-            if (module == null)
+            var @module = await _context.Modules.FindAsync(id);
+            if (@module == null)
             {
                 return NotFound();
             }
 
-            moduleServices.DeleteModule(id);
-            moduleServices.Save();
+            _context.Modules.Remove(@module);
+            await _context.SaveChangesAsync();
 
             return NoContent();
+        }
+
+        private bool ModuleExists(int id)
+        {
+            return _context.Modules.Any(e => e.Id == id);
         }
     }
 }

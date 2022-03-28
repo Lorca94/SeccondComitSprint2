@@ -8,14 +8,11 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ForumBackEnd.Data;
 using ForumBackEnd.Models;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Authorization;
 
 namespace ForumBackEnd.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("foro/roles")]
     [ApiController]
-    //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     public class RolesController : ControllerBase
     {
         private readonly ForumBackEndContext _context;
@@ -32,12 +29,6 @@ namespace ForumBackEnd.Controllers
             return await _context.Roles.ToListAsync();
         }
 
-        [HttpGet("user/{id}")]
-        public async Task<ActionResult<IEnumerable<Role>>> GetUserRole(int id)
-        {
-            var users = await _context.Roles.Where(x => x.Id == id ).Include(x => x.Users).ToListAsync();
-            return users;
-        }
         // GET: api/Roles/5
         [HttpGet("{id}")]
         public async Task<ActionResult<Role>> GetRole(int id)

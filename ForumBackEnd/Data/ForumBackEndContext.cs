@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using ForumBackEnd.Models;
+using ForumBackEnd.Models;  
 
 namespace ForumBackEnd.Data
 {
@@ -14,52 +15,48 @@ namespace ForumBackEnd.Data
             : base(options)
         {
         }
-
-
         public DbSet<ForumBackEnd.Models.User> Users { get; set; }
-        public DbSet<ForumBackEnd.Models.Role> Roles { get; set; }
+        public DbSet<ForumBackEnd.Models.Role> Roles  { get; set; }
         public DbSet<ForumBackEnd.Models.Course> Courses { get; set; }
+        public DbSet<ForumBackEnd.Models.CourseUser> CourseRelations { get; set; }
         public DbSet<ForumBackEnd.Models.Module> Modules { get; set; }
-        public DbSet<ForumBackEnd.Models.Question> Questions{ get; set; }
-        public DbSet<ForumBackEnd.Models.Answer> Answers{ get; set; }
-        // public DbSet<ForumBackEnd.Models.Liked> Likeds{ get; set; }
+        public DbSet<ForumBackEnd.Models.ModuleUser> ModuleUser { get; set; }
+        public DbSet<ForumBackEnd.Models.Question> Questions { get; set; }
+        public DbSet<ForumBackEnd.Models.SubQuestion> SubQuestions { get; set; }
+        public DbSet<ForumBackEnd.Models.LikesQuestion> LikesQuestions { get; set; }
+        public DbSet<ForumBackEnd.Models.LikesAnswer> LikesAnswers { get; set; }
 
+        public DbSet<ForumBackEnd.Models.Answer> Answers { get; set; }
         protected override void OnModelCreating(ModelBuilder model)
         {
-            // Role --> User Ok
-            model.Entity<Role>().HasMany(r => r.Users).WithOne(u => u.Role).HasForeignKey(r => r.RoleId);
-            //model.Entity<Role>().Navigation(b => b.Users).UsePropertyAccessMode(PropertyAccessMode.PreferFieldDuringConstruction);
-            // User --> Course Ok
-            model.Entity<User>().HasMany(r => r.Courses).WithOne(u => u.User).HasForeignKey(r => r.UserId);
-            // Course --> module Ok
-            model.Entity<Course>().HasMany(c => c.Modules).WithOne(m => m.Course).HasForeignKey(c => c.CourseId);
-            // Course User ok
-            model.Entity<Course>().HasOne(c => c.User).WithMany(c => c.Courses).HasForeignKey(c => c.UserId);
-            // ModuleUser ok
-            model.Entity<Module>().HasOne(m => m.User).WithMany(u => u.Modules).HasForeignKey(r => r.UserId).OnDelete(DeleteBehavior.NoAction);
-            // ModuleQuestion ok
-            model.Entity<Module>().HasMany(m => m.Questions).WithOne(q => q.Module).HasForeignKey(r => r.ModuleId);
-            // Question User ok
-            model.Entity<Question>().HasOne(q => q.User).WithMany(u => u.Questions).HasForeignKey(r => r.UserId).OnDelete(DeleteBehavior.NoAction);
-            // Answer User ok
-            model.Entity<Answer>().HasOne(q => q.User).WithMany(u => u.Answers).HasForeignKey(r => r.UserId).OnDelete(DeleteBehavior.NoAction);
-            // Answer Question ok
-            model.Entity<Answer>().HasOne(a => a.Question).WithMany(u => u.Answers).HasForeignKey(r => r.QuestionId);
-            // like user
-            model.Entity<User>().HasMany(a => a.Likes).WithOne(a => a.User).HasForeignKey(r => r.UserId).OnDelete(DeleteBehavior.NoAction);
-           // question like
-            model.Entity<Question>().HasMany(a => a.Like).WithOne(b => b.Question).HasForeignKey(b => b.QuestionId).OnDelete(DeleteBehavior.NoAction);
-            // suscriber user
-            model.Entity<User>().HasMany(a => a.Subs).WithOne(a => a.User).HasForeignKey(r => r.UserId).OnDelete(DeleteBehavior.NoAction);
-            // siscriber question
-            model.Entity<Question>().HasMany(a => a.Subs).WithOne(b => b.Question).HasForeignKey(b => b.QuestionId).OnDelete(DeleteBehavior.NoAction);
-            base.OnModelCreating(model);
+            // Relacion course module
+            model.Entity<Course>().HasMany( r => r.Modules ).WithOne( r => r.Course);
+
+            // Relacion user course
+            model.Entity<CourseUser>().HasKey( x => new { x.UserId, x.CourseId });
+
+            // Relacion user module
+            model.Entity<ModuleUser>().HasKey( x => new { x.UserId, x.ModuleId });
+
+            // Relacion user question
+            model.Entity<Question>().HasOne( x => x.User ).WithMany( u => u.Questions ).OnDelete(DeleteBehavior.NoAction); ; ;
+
+            // Relacion question like
+            model.Entity<LikesQuestion>().HasKey(x => new { x.UserId, x.QuestionId });
+
+            // Relacion answer like
+            model.Entity<LikesAnswer>().HasKey(x => new { x.UserId, x.AnswerId });
+            // Relacion question answer
+            model.Entity<Answer>().HasOne( x => x.Question ).WithMany( u => u.Answers ).OnDelete(DeleteBehavior.NoAction); ; ;
+
+            // Relacion user answer
+            model.Entity<Answer>().HasOne(x => x.User).WithMany(u => u.Answers).OnDelete(DeleteBehavior.NoAction); ;
+            // Relacion de subsquestion
+            model.Entity<SubQuestion>().HasKey(x => new { x.UserId, x.QuestionId });
+            // Relacion Module Question
+            model.Entity<Question>().HasOne(x => x.Module).WithMany( u => u.Questions ).OnDelete(DeleteBehavior.NoAction);
         }
-        // public DbSet<ForumBackEnd.Models.Liked> Likeds{ get; set; }
 
-        public DbSet<ForumBackEnd.Models.Like> Like { get; set; }
-        // public DbSet<ForumBackEnd.Models.Liked> Likeds{ get; set; }
-
-        public DbSet<ForumBackEnd.Models.Suscriber> Suscriber { get; set; }
+        
     }
 }
