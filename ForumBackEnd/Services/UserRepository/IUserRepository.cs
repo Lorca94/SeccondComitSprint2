@@ -11,6 +11,7 @@ namespace ForumBackEnd.Services.UserRepository
         User Create(User user);
         void Update(User user); 
         bool DeleteById(int userId);
+        bool ExistsByEmail(string email);
         bool UserExists(int userId);
     }
 }

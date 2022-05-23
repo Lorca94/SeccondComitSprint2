@@ -57,6 +57,11 @@ namespace ForumBackEnd.Services.UserRepository
             }
         }
 
+        public bool ExistsByEmail(string email)
+        {
+            return context.Users.Any( x => x.Email == email);
+        }
+
         public bool UserExists(int userId)
         {
             return context.Users.Any(x => x.Id == userId);
